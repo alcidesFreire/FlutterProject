@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_project/pages/userprofile/user_profile_page.dart';
 
-
 class MainPage extends StatefulWidget {
   MainPage({super.key});
 
@@ -16,7 +15,7 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        // backgroundColor: ,
         elevation: 2.0,
         title: const Text("Flutter Ecom"),
       ),
@@ -46,9 +45,7 @@ class _MainPageState extends State<MainPage> {
             ),
           ),
         ),
-        const Center(
-          child: UserProfilePage(),
-        ),
+        const UserProfilePage(),
       ][_index],
       bottomNavigationBar: NavigationBar(
           selectedIndex: _index,
@@ -68,7 +65,7 @@ class _MainPageState extends State<MainPage> {
             ),
             NavigationDestination(
               icon: Icon(Icons.line_style_outlined),
-              label: 'Galeria',
+              label: 'Pedidos',
             ),
             NavigationDestination(
               icon: Icon(Icons.account_box_outlined),

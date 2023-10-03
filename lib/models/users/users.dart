@@ -1,6 +1,5 @@
 //classe de dados (DTO)
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '';
 
 class Users {
   String? id;
@@ -8,18 +7,18 @@ class Users {
   String? email;
   String? password;
   String? phone;
-  String? birth;
-  String? social;
-  Users({
-    this.id,
-    this.userName,
-    this.email,
-    this.password,
-    this.phone,
-        this.birth,
-    this.social
-
-  });
+  String? birthday;
+  String? socialMedia;
+  String? image;
+  Users(
+      {this.id,
+      this.userName,
+      this.email,
+      this.password,
+      this.phone,
+      this.birthday,
+      this.socialMedia,
+      this.image});
 
   //método para converter dados do objeto em formato compatível com JSON
   Map<String, dynamic> toJson() {
@@ -29,20 +28,21 @@ class Users {
       'email': email,
       'phone': phone,
       'password': password,
-      'social': social,
-      'birth': birth,
-
+      'socialMedia': socialMedia,
+      'birthday': birthday,
+      'image': image
     };
   }
 
-  //método para converter dados do objeto em formato compatível com JSON
+  //método construtor para converter dados do objeto do tipo documento do firebase
+  //em formato compatível com o Objeto Users (esta própria classe)
   Users.fromJson(DocumentSnapshot doc) {
     id = doc.id;
     userName = doc.get('userName');
     email = doc.get('email');
     phone = doc.get('phone');
-    social = doc.get('social');
-    birth = doc.get('birth');
-    
+    socialMedia = doc.get('socialMedia');
+    birthday = doc.get('birthday');
+    image = doc.get('image');
   }
 }

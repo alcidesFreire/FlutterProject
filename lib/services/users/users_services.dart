@@ -1,32 +1,38 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_project/models/users/users.dart';
+import 'package:uuid/uuid.dart';
 
 class UsersServices extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  Users users = Users();
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  Users? users;
+
+  DocumentReference get _firetoreRef => _firestore.doc('users/${users!.id}');
+  CollectionReference get _collectionRef => _firestore.collection('users');
 
   UsersServices() {
-    _loadingCurrentUser;
+    _loadingCurrentUser();
   }
-  DocumentReference get _firetoreRef => _firestore.doc('users/${users.id}');
 
   //Método para registrar o usuário no firebase console
-  Future<bool> signUp(String email, String password, String userName, String birth, String phone, String social) async {
+  Future<bool> signUp(Users users, dynamic imageFile, bool plat) async {
     try {
       User? user = (await _auth.createUserWithEmailAndPassword(
-              email: email, password: password))
+              email: users.email!, password: users.password!))
           .user;
 
-      users.id = user!.uid;
-      users.email = email;
-      users.userName = userName;
-      users.birth = birth;
-      users.phone = phone;
-      users.social = social;
+      this.users!.id = user!.uid;
+      this.users!.email = users.email;
+      this.users!.userName = users.userName;
+      this.users!.birthday = users.birthday;
+      this.users!.phone = users.phone;
+      this.users!.socialMedia = users.socialMedia;
       saveUserDetails();
+      _uploadImage(imageFile, plat);
       return Future.value(true);
     } on FirebaseAuthException catch (error) {
       if (error.code == 'invalid-email') {
@@ -43,18 +49,20 @@ class UsersServices extends ChangeNotifier {
   }
 
   //Método para autenticação de usuário
-  Future<bool> signIn(
+  Future<void> signIn(
       {String? email,
       String? password,
       Function? onSucess,
       Function? onFail}) async {
     try {
-      await _auth.signInWithEmailAndPassword(
+      User? user = (await _auth.signInWithEmailAndPassword(
         email: email!,
         password: password!,
-      );
+      ))
+          .user;
+      await _loadingCurrentUser(user: user);
       onSucess!();
-      return Future.value(true);
+      // return Future.value(true);
     } on FirebaseAuthException catch (e) {
       String code;
       if (e.code == 'invalid-email') {
@@ -67,37 +75,70 @@ class UsersServices extends ChangeNotifier {
         code = "Algum erro aconteceu na Plataforma do Firebase";
       }
       onFail!(code);
-      return Future.value(false);
+      // return Future.value(false);
     }
   }
 
   saveUserDetails() async {
-    await _firetoreRef.set(users.toJson());
+    await _firetoreRef.set(users!.toJson());
   }
 
-  Future<Users> getUser() async {
-    debugPrint('getUser ${users.userName}');
-    notifyListeners();
-    return Future.value(users);
-  }
-
-  Future<void> _loadingCurrentUser({User? user}) async {
-    //se firebaseUser for nulo ele vai pegar o usuário lá no firebase
-    final User? currentUser = user ?? _auth.currentUser;
-    debugPrint("USUÁRIO ATUAL -->>> $currentUser");
-    if (currentUser != null && !currentUser.isAnonymous) {
-      final DocumentSnapshot docUser =
+  //método para obter as credenciais do usuário autenticado
+  _loadingCurrentUser({User? user}) async {
+    User? currentUser = user ?? _auth.currentUser;
+    if (currentUser != null) {
+      DocumentSnapshot docUser =
           await _firestore.collection('users').doc(currentUser.uid).get();
       users = Users.fromJson(docUser);
       notifyListeners();
     } else {
       users = Users(
-        email: "alberto_sales@email.com",
-        id: currentUser?.uid,
-        userName: "anonnimous",
-      );
+          email: 'anonimo@anonimo.com',
+          id: currentUser?.uid,
+          userName: 'anônimo');
+    }
+  }
 
-      debugPrint("USUÁRIO LOGADO COMO ANÔNIMO!!!! -->>> ${users.userName}");
+  _uploadImage(dynamic imageFile, bool plat) async {
+    //chave para persistir a imagem no firebasestorage
+    final uuid = const Uuid().v1();
+    try {
+      Reference storageRef = _storage.ref().child('users').child(users!.id!);
+      //objeto para realizar o upload da imagem
+      UploadTask task;
+      if (!plat) {
+        task = storageRef.child(uuid).putFile(
+              imageFile,
+              SettableMetadata(
+                contentType: 'image/jpg',
+                customMetadata: {
+                  'upload by': users!.userName!,
+                  'description': 'Informação de arquivo',
+                  'imageName': imageFile
+                },
+              ),
+            );
+      } else {
+        task = storageRef.child(uuid).putData(
+              imageFile,
+              SettableMetadata(contentType: 'image/jpg', customMetadata: {
+                'upload by': users!.userName!,
+                'description': 'Informação de arquivo',
+                // 'imageName': File(imageFile).
+              }),
+            );
+      }
+      //procedimento para persistir a imagem no banco de dados firebase
+      String url = await (await task.whenComplete(() {})).ref.getDownloadURL();
+      DocumentReference docRef = _collectionRef.doc(users!.id);
+      await docRef.update({'image': url});
+    } on FirebaseException catch (e) {
+      if (e.code != 'OK') {
+        debugPrint('Problemas ao gravar dados');
+      } else if (e.code == 'ABORTED') {
+        debugPrint('Inclusão de dados abortada');
+      }
+      return Future.value(false);
     }
   }
 }

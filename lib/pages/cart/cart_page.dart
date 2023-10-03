@@ -3,7 +3,7 @@ import 'package:mobile_project/services/cart/cart_service.dart';
 import 'package:provider/provider.dart';
 
 class CartPage extends StatefulWidget {
-  const CartPage({super.key});
+  CartPage();
 
   @override
   _CartPageState createState() => _CartPageState();
@@ -24,7 +24,7 @@ class _CartPageState extends State<CartPage> {
                 title: Text(e.name ?? ''),
                 subtitle: Text("USD " + (e.price ?? '')),
                 trailing: IconButton(
-                  icon: const Icon(Icons.remove_circle),
+                  icon: Icon(Icons.remove_circle),
                   onPressed: () {
                     context.read<CartService>().removeFromCart(e);
                   },

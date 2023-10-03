@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mobile_project/models/cart/cart_item.dart';
 
 class CartService with ChangeNotifier {
-  final List<CartItem> _items = getItems();
-  final List<CartItem> _cart = [];
+  List<CartItem> _items = getItems();
+  List<CartItem> _cart = [];
 
   List<CartItem> get items => _items;
 
